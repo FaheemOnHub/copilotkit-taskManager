@@ -9,8 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
-
+import { Separator } from "@/components/ui/separator";
 import { CircleCheckBig, Calendar, Bell, BellRing } from "lucide-react";
 const App = () => {
   const [userName, setuserName] = useState("Faheem");
@@ -38,9 +40,18 @@ const App = () => {
       time: "10:30 AM",
     },
   ]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const openModal = () => {
+    setIsModalOpen(true);
+  };
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
 
   return (
-    <div className="flex flex-col p-4 ">
+    <div
+      className={`flex flex-col p-4 ${isModalOpen ? "backdrop-blur-sm" : ""}`}
+    >
       {/* <h1 className="text-3xl p-2 font-serif">NYO Todo</h1> */}
       <header className="flex justify-between items-center py-4">
         <h1 className="text-3xl font-serif">{`Hello, ${userName}`}</h1>
@@ -93,10 +104,55 @@ const App = () => {
         <Button
           variant="outline"
           className="w-33 h-14 xl:w-52 hover:bg-blue-400 hover:text-white hover:border-blue-600 transition-all duration-700"
+          onClick={openModal}
         >
           + Create New
         </Button>
       </div>
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center">
+          <Card className="bg-white p-4 rounded-lg shadow-lg max-w-md w-full">
+            <CardHeader className="text-xl font-semibold mb-4 items-center justify-center">
+              New Task ToDo
+            </CardHeader>
+            <Separator className="my-4" />
+            <CardContent>
+              <CardHeader className="text-xl font-semibold">
+                Title Task
+              </CardHeader>
+              <Input placeholder="Add Task Name..." />
+              <CardHeader className="text-xl font-semibold">
+                Category
+              </CardHeader>
+
+              <Tabs className=" w-full">
+                <TabsList
+                  className="flex justify-between 
+                "
+                >
+                  <TabsTrigger value="personal" className="min-w-40">
+                    Personal
+                  </TabsTrigger>
+                  <TabsTrigger value="teams" className="min-w-40">
+                    Teams
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+              <CardHeader className="text-xl font-semibold">
+                Description
+              </CardHeader>
+              <Input placeholder="Add Descriptions..." className="min-h-20" />
+            </CardContent>
+
+            <div className="flex justify-end gap-4">
+              <Button variant="outline" onClick={closeModal}>
+                Cancel
+              </Button>
+              <Button onClick={closeModal}>Create</Button>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
