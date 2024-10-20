@@ -14,6 +14,11 @@ import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { CircleCheckBig, Calendar, Bell, BellRing } from "lucide-react";
+
+import "@copilotkit/react-ui/styles.css";
+import { CopilotPopup } from "@copilotkit/react-ui";
+import { useCopilotReadable } from "@copilotkit/react-core";
+import { useCopilotAction } from "@copilotkit/react-core";
 const App = () => {
   const [userName, setuserName] = useState("Faheem");
   const [onProgress, setonProgress] = useState([
@@ -47,7 +52,50 @@ const App = () => {
   const closeModal = () => {
     setIsModalOpen(false);
   };
-
+  const handleSavetask = async () => {
+    const data = { title, description };
+    try {
+    } catch (error) {}
+  };
+  useCopilotReadable({
+    description: "Tasks that are pending on the todo list",
+    value: onProgress,
+  });
+  useCopilotReadable({
+    description: "Tasks that are completed on the todo list",
+    value: done,
+  });
+  useCopilotAction({
+    name: "addTasks",
+    description: "adding tasks in todo list",
+    parameters: [
+      {
+        name: "task",
+        type: "object[]",
+        description: "the task to add",
+        attributes: [
+          {
+            name: "taskName",
+            type: "string",
+            description: "name of the task",
+          },
+          {
+            name: "description",
+            type: "string",
+            description: "description of the task",
+          },
+          {
+            name: "progress",
+            type: "number",
+            description: "progress of the task so far, initially zero",
+          },
+        ],
+      },
+    ],
+    handler: ({ task }) => {
+      setonProgress(task);
+    },
+  });
   return (
     <div
       className={`flex flex-col p-4 ${isModalOpen ? "backdrop-blur-sm" : ""}`}
@@ -66,7 +114,7 @@ const App = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {onProgress.map((task, index) => (
-            <Card className="p-4 shadow-md">
+            <Card className="p-4 shadow-md" key={index}>
               <CardHeader>
                 <CardTitle>{task.title}</CardTitle>
                 <CardDescription>{task.description}</CardDescription>
@@ -86,7 +134,10 @@ const App = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {done.map((task, index) => (
-            <Card className="p-4 shadow-md flex justify-between items-center">
+            <Card
+              className="p-4 shadow-md flex justify-between items-center"
+              key={task + index}
+            >
               <CardHeader>
                 <CardTitle className="line-through">{task.title}</CardTitle>
                 <CardDescription>{task.description}</CardDescription>
@@ -153,6 +204,15 @@ const App = () => {
           </Card>
         </div>
       )}
+      <CopilotPopup
+        instructions={
+          "You are assisting the user as best as you can. Ansewr in the best way possible given the data you have."
+        }
+        labels={{
+          title: "Popup Assistant",
+          initial: "Need any help?",
+        }}
+      />
     </div>
   );
 };
