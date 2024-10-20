@@ -75,7 +75,7 @@ const App = () => {
         description: "the task to add",
         attributes: [
           {
-            name: "taskName",
+            name: "title",
             type: "string",
             description: "name of the task",
           },
@@ -94,6 +94,7 @@ const App = () => {
     ],
     handler: ({ task }) => {
       setonProgress(task);
+      console.log(onProgress);
     },
   });
   return (

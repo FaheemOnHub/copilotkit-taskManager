@@ -1,28 +1,15 @@
-// import OpenAI from "openai";
-// import {
-//   CopilotRuntime,
-//   OpenAIAdapter,
-//   copilotRuntimeNodeHttpEndpoint,
-// } from "@copilotkit/runtime";
-// const OpenAI = require("openai");
-// const CopilotRuntime = require("@copilotkit/runtime");
-// const OpenAIAdapter = require("@copilotkit/runtime");
-// const copilotRuntimeNodeHttpEndpoint = require("@copilotkit/runtime");
-const OpenAI = require("openai");
 const {
   CopilotRuntime,
-  OpenAIAdapter,
+  GroqAdapter,
   copilotRuntimeNodeHttpEndpoint,
 } = require("@copilotkit/runtime");
 require("dotenv").config();
-const token = process.env.github_token;
-const endpoint = "https://models.inference.ai.azure.com";
-const modelName = "gpt-4o";
+
+const Groq = require("groq-sdk");
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const express = require("express");
 const app = express();
 
-const openai = new OpenAI({ baseURL: endpoint, apiKey: token });
-const serviceAdapter = new OpenAIAdapter({ openai });
 const connectDB = require("./db/connect");
 
 const morgan = require("morgan");
@@ -31,6 +18,12 @@ const notFound = require("./middleware/not-found");
 //middleware...
 app.use(express.static("./public"));
 app.use(express.json()); //this express.json is middleware as it stands b/w request and response ..//data from the body is added to the req
+const copilotKit = new CopilotRuntime();
+const serviceAdapter = new GroqAdapter({
+  groq,
+  model: "llama3-groq-8b-8192-tool-use-preview",
+});
+
 app.use("/copilotkit", (req, res, next) => {
   const runtime = new CopilotRuntime();
   const handler = copilotRuntimeNodeHttpEndpoint({
