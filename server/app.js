@@ -4,12 +4,13 @@ const {
   copilotRuntimeNodeHttpEndpoint,
 } = require("@copilotkit/runtime");
 require("dotenv").config();
-
+const Task = require("./models/Task");
 const Groq = require("groq-sdk");
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const express = require("express");
+const cors = require("cors");
 const app = express();
-
+app.use(cors());
 const connectDB = require("./db/connect");
 
 const morgan = require("morgan");
@@ -32,6 +33,28 @@ app.use("/copilotkit", (req, res, next) => {
     serviceAdapter,
   });
   return handler(req, res, next);
+});
+app.post("/api/updateTasks", async (req, res) => {
+  const tasksToUpdate = req.body.tasks;
+
+  try {
+    // Update each task in the database
+    const updates = tasksToUpdate.map((task) => {
+      return Task.findOneAndUpdate(
+        { name: task.name }, // Find task by unique ID
+        { ...task }, // Update with new data
+        { new: true, upsert: true } // Create the task if it doesn't exist
+      );
+    });
+
+    // Wait for all updates to complete
+    await Promise.all(updates);
+
+    res.status(200).json({ message: "Tasks updated successfully." });
+  } catch (error) {
+    console.error("Error updating tasks:", error);
+    res.status(500).json({ error: "An error occurred while updating tasks." });
+  }
 });
 app.use("/api/v1/tasks", tasks);
 //404--notFound

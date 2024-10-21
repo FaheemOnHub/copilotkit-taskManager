@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import {
@@ -20,19 +20,10 @@ import { CopilotPopup } from "@copilotkit/react-ui";
 import { useCopilotReadable } from "@copilotkit/react-core";
 import { useCopilotAction } from "@copilotkit/react-core";
 const App = () => {
-  const [userName, setuserName] = useState("Faheem");
-  const [onProgress, setonProgress] = useState([
-    {
-      title: "Clean the kitchen",
-      description: "Wash dishes and mop the floor",
-      progress: 50,
-    },
-    {
-      title: "Wash the car",
-      description: "Clean the exterior and vacuum the interior",
-      progress: 30,
-    },
-  ]);
+  const [count, setCount] = useState(0);
+  const [fetchedData, setfetchedData] = useState([]);
+  const [userName, setuserName] = useState("Anon");
+  const [onProgress, setonProgress] = useState([]);
   const [done, setdone] = useState([
     {
       title: "Go to school",
@@ -66,6 +57,42 @@ const App = () => {
     value: done,
   });
   useCopilotAction({
+    name: "editTasks",
+    description: "edit tasks in todo list",
+    parameters: [
+      {
+        name: "updatedtask",
+        type: "object[]",
+        description: "the task to edit",
+        attributes: [
+          {
+            name: "name",
+            type: "string",
+            description: "name of the task",
+          },
+          {
+            name: "description",
+            type: "string",
+            description: "description of the task",
+          },
+          {
+            name: "progress",
+            type: "number",
+            description: "progress of the task so far, initially zero",
+          },
+        ],
+      },
+    ],
+    handler: ({ updatedtask }) => {
+      setonProgress((prevTasks) => {
+        return prevTasks.map((task) =>
+          task.name === updatedtask.name ? { ...task, ...updatedtask } : task
+        );
+      });
+      console.log(onProgress);
+    },
+  });
+  useCopilotAction({
     name: "addTasks",
     description: "adding tasks in todo list",
     parameters: [
@@ -75,7 +102,7 @@ const App = () => {
         description: "the task to add",
         attributes: [
           {
-            name: "title",
+            name: "name",
             type: "string",
             description: "name of the task",
           },
@@ -93,10 +120,64 @@ const App = () => {
       },
     ],
     handler: ({ task }) => {
-      setonProgress(task);
-      console.log(onProgress);
+      setonProgress((prevTasks) => [...prevTasks, ...task]);
     },
   });
+  const updateDB = async () => {
+    try {
+      setCount(2);
+      const tasktoUpdate = onProgress.filter(
+        (onProgressTask) =>
+          !fetchedData.some(
+            (fetchedData) =>
+              fetchedData.name === onProgressTask.name &&
+              fetchedData.progress === onProgressTask.progress
+          )
+      );
+      if (tasktoUpdate.length === 0) {
+        console.log("No changes detected, skipping DB update.");
+        return;
+      }
+      console.log("Tasks to update:", tasktoUpdate);
+      const response = await fetch("http://localhost:3000/api/updateTasks", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ tasks: tasktoUpdate }),
+      });
+
+      const result = await response.json();
+      console.log("DB updated successfully:", result);
+    } catch (error) {}
+  };
+  const fetchAllTasks = async () => {
+    try {
+      const tasks = await fetch("http://localhost:3000/api/v1/tasks", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      const data = await tasks.json();
+
+      setonProgress((prevTasks) => [...prevTasks, ...data]);
+      setfetchedData((prevTasks) => [...prevTasks, ...data]);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  useEffect(() => {
+    fetchAllTasks();
+    setCount(1);
+  }, []);
+  useEffect(() => {
+    console.log(onProgress);
+    if (count !== 0) {
+      updateDB();
+    }
+  }, [onProgress]);
   return (
     <div
       className={`flex flex-col p-4 ${isModalOpen ? "backdrop-blur-sm" : ""}`}
@@ -117,7 +198,7 @@ const App = () => {
           {onProgress.map((task, index) => (
             <Card className="p-4 shadow-md" key={index}>
               <CardHeader>
-                <CardTitle>{task.title}</CardTitle>
+                <CardTitle>{task.name}</CardTitle>
                 <CardDescription>{task.description}</CardDescription>
               </CardHeader>
               <div className="flex items-center gap-2 mt-2">
@@ -140,12 +221,12 @@ const App = () => {
               key={task + index}
             >
               <CardHeader>
-                <CardTitle className="line-through">{task.title}</CardTitle>
-                <CardDescription>{task.description}</CardDescription>
+                <CardTitle className="line-through">{task.name}</CardTitle>
+                {/* <CardDescription>{task.description}</CardDescription> */}
               </CardHeader>
               <div className="flex xl:flex-row flex-col items-center gap-2">
                 <CircleCheckBig />
-                <span>{task.time}</span>
+                {/* <span>{task.time}</span> */}
               </div>
             </Card>
           ))}
