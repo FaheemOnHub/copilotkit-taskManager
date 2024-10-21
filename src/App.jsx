@@ -139,13 +139,16 @@ const App = () => {
         return;
       }
       console.log("Tasks to update:", tasktoUpdate);
-      const response = await fetch("http://localhost:3000/api/updateTasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ tasks: tasktoUpdate }),
-      });
+      const response = await fetch(
+        "https://copilotkit-taskmanager.onrender.com/api/updateTasks",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ tasks: tasktoUpdate }),
+        }
+      );
 
       const result = await response.json();
       console.log("DB updated successfully:", result);
@@ -153,12 +156,15 @@ const App = () => {
   };
   const fetchAllTasks = async () => {
     try {
-      const tasks = await fetch("http://localhost:3000/api/v1/tasks", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
+      const tasks = await fetch(
+        "https://copilotkit-taskmanager.onrender.com/api/v1/tasks",
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const data = await tasks.json();
 
@@ -221,8 +227,8 @@ const App = () => {
               key={task + index}
             >
               <CardHeader>
-                <CardTitle className="line-through">{task.name}</CardTitle>
-                {/* <CardDescription>{task.description}</CardDescription> */}
+                <CardTitle className="line-through">{task.title}</CardTitle>
+                <CardDescription>{task.description}</CardDescription>
               </CardHeader>
               <div className="flex xl:flex-row flex-col items-center gap-2">
                 <CircleCheckBig />
