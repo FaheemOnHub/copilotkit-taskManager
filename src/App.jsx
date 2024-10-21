@@ -13,12 +13,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { CircleCheckBig, Calendar, Bell, BellRing } from "lucide-react";
+import { CircleCheckBig, Calendar, Bell } from "lucide-react";
 
 import "@copilotkit/react-ui/styles.css";
 import { CopilotPopup } from "@copilotkit/react-ui";
 import { useCopilotReadable } from "@copilotkit/react-core";
 import { useCopilotAction } from "@copilotkit/react-core";
+
 const App = () => {
   const [count, setCount] = useState(0);
   const [fetchedData, setfetchedData] = useState([]);
@@ -37,92 +38,147 @@ const App = () => {
     },
   ]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
   const openModal = () => {
     setIsModalOpen(true);
   };
+
   const closeModal = () => {
     setIsModalOpen(false);
   };
+
   const handleSavetask = async () => {
     const data = { title, description };
     try {
     } catch (error) {}
   };
+
   useCopilotReadable({
     description: "Tasks that are pending on the todo list",
     value: onProgress,
   });
+
   useCopilotReadable({
     description: "Tasks that are completed on the todo list",
     value: done,
   });
+
+  // Edit Task Action
   useCopilotAction({
     name: "editTasks",
-    description: "edit tasks in todo list",
+    description: "Edit an existing task in the todo list",
     parameters: [
       {
         name: "updatedtask",
-        type: "object[]",
-        description: "the task to edit",
+        type: "object",
+        description: "The task to be edited",
         attributes: [
-          {
-            name: "name",
-            type: "string",
-            description: "name of the task",
-          },
+          { name: "name", type: "string", description: "Name of the task" },
           {
             name: "description",
             type: "string",
-            description: "description of the task",
+            description: "Description of the task",
           },
           {
             name: "progress",
             type: "number",
-            description: "progress of the task so far, initially zero",
+            description: "Progress of the task",
           },
         ],
       },
     ],
     handler: ({ updatedtask }) => {
-      setonProgress((prevTasks) => {
-        return prevTasks.map((task) =>
+      setonProgress((prevTasks) =>
+        prevTasks.map((task) =>
           task.name === updatedtask.name ? { ...task, ...updatedtask } : task
-        );
-      });
-      console.log(onProgress);
+        )
+      );
+      console.log("Task updated:", updatedtask);
     },
   });
+
+  // Update Task Action
   useCopilotAction({
-    name: "addTasks",
-    description: "adding tasks in todo list",
+    name: "updateTasks",
+    description: "Update tasks in the database",
     parameters: [
       {
-        name: "task",
+        name: "tasksToUpdate",
         type: "object[]",
-        description: "the task to add",
+        description: "Tasks that need to be updated in the database",
         attributes: [
-          {
-            name: "name",
-            type: "string",
-            description: "name of the task",
-          },
+          { name: "name", type: "string", description: "Task name" },
           {
             name: "description",
             type: "string",
-            description: "description of the task",
+            description: "Task description",
           },
-          {
-            name: "progress",
-            type: "number",
-            description: "progress of the task so far, initially zero",
-          },
+          { name: "progress", type: "number", description: "Task progress" },
         ],
       },
     ],
-    handler: ({ task }) => {
-      setonProgress((prevTasks) => [...prevTasks, ...task]);
+    handler: async ({ tasksToUpdate }) => {
+      try {
+        const response = await fetch(
+          "https://copilotkit-taskmanager.onrender.com/api/updateTasks",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tasks: tasksToUpdate }),
+          }
+        );
+        const result = await response.json();
+        console.log("Tasks updated in the DB:", result);
+      } catch (error) {
+        console.error("Failed to update tasks:", error);
+      }
     },
   });
+
+  // Delete Task Action
+  useCopilotAction({
+    name: "deleteTask",
+    description: "Delete a task from the todo list",
+    parameters: [
+      {
+        name: "taskName",
+        type: "string",
+        description: "Name of the task to delete",
+      },
+    ],
+    handler: ({ taskName }) => {
+      setonProgress((prevTasks) => {
+        const updatedTasks = prevTasks.filter((task) => task.name !== taskName);
+        console.log("Task deleted:", taskName);
+        return updatedTasks;
+      });
+    },
+  });
+
+  // Complete Task Action
+  useCopilotAction({
+    name: "completeTask",
+    description: "Mark a task as completed",
+    parameters: [
+      {
+        name: "taskName",
+        type: "string",
+        description: "Name of the task to mark as completed",
+      },
+    ],
+    handler: ({ taskName }) => {
+      setonProgress((prevTasks) => {
+        const taskToComplete = prevTasks.find((task) => task.name === taskName);
+        if (taskToComplete) {
+          setdone((prevDone) => [...prevDone, taskToComplete]);
+          return prevTasks.filter((task) => task.name !== taskName);
+        }
+        return prevTasks;
+      });
+      console.log("Task completed:", taskName);
+    },
+  });
+
   const updateDB = async () => {
     try {
       setCount(2);
@@ -154,6 +210,7 @@ const App = () => {
       console.log("DB updated successfully:", result);
     } catch (error) {}
   };
+
   const fetchAllTasks = async () => {
     try {
       const tasks = await fetch(
@@ -167,28 +224,28 @@ const App = () => {
       );
 
       const data = await tasks.json();
-
       setonProgress((prevTasks) => [...prevTasks, ...data]);
       setfetchedData((prevTasks) => [...prevTasks, ...data]);
     } catch (error) {
       console.log(error);
     }
   };
+
   useEffect(() => {
     fetchAllTasks();
     setCount(1);
   }, []);
+
   useEffect(() => {
-    console.log(onProgress);
     if (count !== 0) {
       updateDB();
     }
   }, [onProgress]);
+
   return (
     <div
       className={`flex flex-col p-4 ${isModalOpen ? "backdrop-blur-sm" : ""}`}
     >
-      {/* <h1 className="text-3xl p-2 font-serif">NYO Todo</h1> */}
       <header className="flex justify-between items-center py-4">
         <h1 className="text-3xl font-serif">{`Hello, ${userName}`}</h1>
         <div className="flex gap-4">
@@ -196,7 +253,8 @@ const App = () => {
           <Bell />
         </div>
       </header>
-      <Card className=" w-full  p-6">
+
+      <Card className="w-full p-6">
         <CardHeader className="flex flex-col gap-2 ">
           <CardTitle className="text-2xl">On Progress</CardTitle>
         </CardHeader>
@@ -232,75 +290,13 @@ const App = () => {
               </CardHeader>
               <div className="flex xl:flex-row flex-col items-center gap-2">
                 <CircleCheckBig />
-                {/* <span>{task.time}</span> */}
               </div>
             </Card>
           ))}
         </CardContent>
       </Card>
 
-      <div className="flex justify-center items-center mt-8 sticky bottom-1  bg-white/30 backdrop-blur-sm p-0 ">
-        <Button
-          variant="outline"
-          className="w-33 h-14 xl:w-52 hover:bg-blue-400 hover:text-white hover:border-blue-600 transition-all duration-700"
-          onClick={openModal}
-        >
-          + Create New
-        </Button>
-      </div>
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center">
-          <Card className="bg-white p-4 rounded-lg shadow-lg max-w-md w-full">
-            <CardHeader className="text-xl font-semibold mb-4 items-center justify-center">
-              New Task ToDo
-            </CardHeader>
-            <Separator className="my-4" />
-            <CardContent>
-              <CardHeader className="text-xl font-semibold">
-                Title Task
-              </CardHeader>
-              <Input placeholder="Add Task Name..." />
-              <CardHeader className="text-xl font-semibold">
-                Category
-              </CardHeader>
-
-              <Tabs className=" w-full">
-                <TabsList
-                  className="flex justify-between 
-                "
-                >
-                  <TabsTrigger value="personal" className="min-w-40">
-                    Personal
-                  </TabsTrigger>
-                  <TabsTrigger value="teams" className="min-w-40">
-                    Teams
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <CardHeader className="text-xl font-semibold">
-                Description
-              </CardHeader>
-              <Input placeholder="Add Descriptions..." className="min-h-20" />
-            </CardContent>
-
-            <div className="flex justify-end gap-4">
-              <Button variant="outline" onClick={closeModal}>
-                Cancel
-              </Button>
-              <Button onClick={closeModal}>Create</Button>
-            </div>
-          </Card>
-        </div>
-      )}
-      <CopilotPopup
-        instructions={
-          "You are assisting the user as best as you can. Ansewr in the best way possible given the data you have."
-        }
-        labels={{
-          title: "Popup Assistant",
-          initial: "Need any help?",
-        }}
-      />
+      <CopilotPopup />
     </div>
   );
 };
