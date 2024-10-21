@@ -5,7 +5,7 @@ import "./index.css";
 import { CopilotKit } from "@copilotkit/react-core";
 
 createRoot(document.getElementById("root")).render(
-  <CopilotKit runtimeUrl="http://localhost:3000/copilotkit">
+  <CopilotKit runtimeUrl="https://copilotkit-taskmanager.onrender.com/copilotkit">
     <App />
   </CopilotKit>
 );
