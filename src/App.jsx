@@ -63,6 +63,33 @@ const App = () => {
     value: done,
   });
 
+  useCopilotAction({
+    name: "addTasks",
+    description: "add task to the todo list",
+    parameters: [
+      {
+        name: "Task",
+        type: "object[]",
+        description: "The task to be added",
+        attributes: [
+          { name: "name", type: "string", description: "Name of the task" },
+          {
+            name: "description",
+            type: "string",
+            description: "Description of the task",
+          },
+          {
+            name: "progress",
+            type: "number",
+            description: "Progress of the task",
+          },
+        ],
+      },
+    ],
+    handler: ({ Task }) => {
+      setonProgress((prev) => [...prev, ...Task]);
+    },
+  });
   // Edit Task Action
   useCopilotAction({
     name: "editTasks",
@@ -190,10 +217,10 @@ const App = () => {
               fetchedData.progress === onProgressTask.progress
           )
       );
-      if (tasktoUpdate.length === 0) {
-        console.log("No changes detected, skipping DB update.");
-        return;
-      }
+      // if (tasktoUpdate.length === 0) {
+      //   console.log("No changes detected, skipping DB update.");
+      //   return;
+      // }
       console.log("Tasks to update:", tasktoUpdate);
       const response = await fetch(
         "https://copilotkit-taskmanager.onrender.com/api/updateTasks",
